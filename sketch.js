@@ -21,7 +21,7 @@ let mostrarSpray = false, tiempoSpray = 0;
 
 // Variables para soporte móvil y teclado
 let xDown = null, yDown = null;
-let inputNombre; // El campo invisible para el teclado móvil
+let inputNombre; 
 
 function setup() {
   let tamanoContenedor = min(windowWidth - 20, 400);
@@ -30,12 +30,12 @@ function setup() {
   canvas.parent('game-container');
   textFont('Press Start 2P'); 
 
-  // Crear el input invisible para móviles
+  // Crear el input invisible
   inputNombre = createInput('');
   inputNombre.attribute('maxlength', '8');
   inputNombre.style('position', 'absolute');
-  inputNombre.style('opacity', '0'); // Invisible
-  inputNombre.style('pointer-events', 'none'); // No estorba clics
+  inputNombre.style('opacity', '0'); 
+  inputNombre.style('pointer-events', 'none'); 
   inputNombre.input(actualizarNombreDesdeInput);
   inputNombre.hide();
 
@@ -57,7 +57,8 @@ function draw() {
     text("¡MORISTE!", width/2, height/2);
     if (--tiempoSpray <= 0) {
       mostrarSpray = false;
-      if (manzanasObtenidas > 5) activarIngresoNombre();
+      // Ajuste: si sacas más de 5 manzanas vas a ranking, si no a reintento
+      if (manzanasObtenidas >= 5) activarIngresoNombre();
       else pantallaReintento = true;
     }
     return;
@@ -73,9 +74,12 @@ function draw() {
 
 function activarIngresoNombre() {
   ingresandoNombre = true;
+  nombreJugador = ""; // Resetear para PC
   inputNombre.show();
   inputNombre.value('');
-  inputNombre.elt.focus(); // Esto abre el teclado en móviles
+  // Posicionar el input cerca del centro para que el navegador lo gestione bien
+  inputNombre.position(windowWidth/2 - 50, windowHeight/2);
+  inputNombre.elt.focus(); 
 }
 
 function juego() {
@@ -146,7 +150,7 @@ function touchStarted() {
       }
     }
   } else if (ingresandoNombre) {
-    inputNombre.elt.focus(); // Re-enfocar si el usuario toca la pantalla
+    inputNombre.elt.focus(); 
   }
   return false;
 }
@@ -169,34 +173,43 @@ function touchEnded() {
 }
 
 function keyPressed() {
-  if (!gameOver && !menu && !ingresandoNombre && !mostrandoRanking) {
+  // SI ESTÁ ESCRIBIENDO EL NOMBRE:
+  if (ingresandoNombre) {
+    if (keyCode === ENTER || keyCode === RETURN) {
+      guardarPuntaje(); 
+      ingresandoNombre = false; 
+      inputNombre.hide();
+      mostrandoRanking = true; 
+    }
+    return true; // Permitir que las letras se escriban en el input
+  }
+
+  // CONTROLES DE MOVIMIENTO:
+  if (!gameOver && !menu && !mostrandoRanking && !pantallaReintento) {
     if (keyCode === UP_ARROW && dir !== 1) proximaDir = 0;
     if (keyCode === DOWN_ARROW && dir !== 0) proximaDir = 1;
     if (keyCode === LEFT_ARROW && dir !== 3) proximaDir = 2;
     if (keyCode === RIGHT_ARROW && dir !== 2) proximaDir = 3;
   }
 
+  // MENÚS Y REINTENTO:
   if (keyCode === ENTER || keyCode === RETURN) {
     if (pantallaReintento) reiniciarJuego();
     else if (juegoGanado) { juegoGanado = false; activarIngresoNombre(); }
-    else if (ingresandoNombre) { 
-      guardarPuntaje(); 
-      ingresandoNombre = false; 
-      inputNombre.hide();
-      mostrandoRanking = true; 
-    }
   }
   
   if (key === 'm' || key === 'M') {
-    if (pantallaReintento || ingresandoNombre) { 
+    if (pantallaReintento) { 
       pantallaReintento = false; 
-      ingresandoNombre = false; 
-      inputNombre.hide();
       menu = true; 
     }
   }
 
-  if (mostrandoRanking && key === ' ') { mostrandoRanking = false; menu = true; }
+  if (mostrandoRanking && (key === ' ' || keyCode === ENTER)) { 
+    mostrandoRanking = false; 
+    menu = true; 
+  }
+
   return false; 
 }
 
@@ -322,10 +335,15 @@ function agregarObstaculoSeguro() {
 function mostrarPantallaNombre() {
   background(10); textAlign(CENTER, CENTER);
   fill(0, 255, 150); textSize(14); text("NUEVO RECORD!", width/2, height/4);
-  fill(255); textSize(12); text("NOMBRE: " + nombreJugador + (frameCount % 30 < 15 ? "_" : ""), width/2, height/2);
-  textSize(8); fill(150); text("(TOCA PARA ABRIR TECLADO)", width/2, height/2 + 40);
   
-  // Botón para confirmar nombre en móvil
+  // Mostrar el nombre que se está escribiendo
+  fill(255); textSize(12); 
+  text("NOMBRE: " + nombreJugador + (frameCount % 30 < 15 ? "_" : ""), width/2, height/2);
+  
+  textSize(8); fill(150); 
+  text("ESCRIBE TU NOMBRE Y PULSA ENTER", width/2, height/2 + 40);
+  
+  // Botón para confirmar nombre
   dibujarBoton(width/2 - 100, height - 60, 200, 45, "CONFIRMAR", color(0, 255, 150));
 }
 
